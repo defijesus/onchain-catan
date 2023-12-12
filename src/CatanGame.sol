@@ -249,21 +249,29 @@ contract CatanGame {
         if (playerId != currentPlayer) {
             revert NotYourTurn();
         }
-        uint256[] memory adjacentSettlements = BOARD.getAdjacentSettlementsToSettlement(settlement);
-        for (uint256 i = 0; i < adjacentSettlements.length; i++) {
-            if (settlementOwner[adjacentSettlements[i]] != 0) {
+        uint256[] memory adjacent = BOARD.getAdjacentSettlementsToSettlement(settlement);
+        for (uint256 i = 0; i < adjacent.length; i++) {
+            if (settlementOwner[adjacent[i]] != 0) {
                 revert InvalidSettlementPlacement();
             }
         }
-        uint256[] memory adjacentRoads = BOARD.getAdjacentRoadsToSettlement(settlement);
+        adjacent = BOARD.getAdjacentRoadsToSettlement(settlement);
         bool isRoadAdjacent;
-        for (uint256 i = 0; i < adjacentRoads.length; i++) {
-            if (adjacentRoads[i] == road) {
+        for (uint256 i = 0; i < adjacent.length; i++) {
+            if (adjacent[i] == road) {
                 isRoadAdjacent = true;
                 break;
             }
         }
         require(isRoadAdjacent);
+        if (currentSettlementPhaseTurns > 4) {
+            adjacent = BOARD.getAdjacentTilesToSettlement(settlement);
+            for (uint i = 0; i < adjacent.length; i++) {
+                uint256 resource = tileToResource[adjacent[i]];
+                playerResourceToAmount[playerId][resource]++;
+                emit ResourceCollected(playerId, resource, 1);
+            }
+        }
         settlementOwner[settlement] = playerId;
         roadOwner[road] = playerId;
 
@@ -817,7 +825,7 @@ contract CatanGame {
     function previousPlayer() internal {
         // next player
         uint256 p = currentPlayer;
-        if (p == 0) {
+        if (p == 1) {
             p = 4;
         } else {
             p--;

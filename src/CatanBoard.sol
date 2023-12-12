@@ -42,6 +42,222 @@ contract CatanBoard {
         return 0;
     }
 
+    /// totally forgot I needed this, adding this at 7 am, will be ugly
+    /// this serves as a short example on how much compressed the other mappings are
+    function getAdjacentTilesToSettlement(uint256 s) public pure returns(uint256[] memory) {
+        uint256 i;
+        uint256[] memory t = new uint256[](3);
+        if (
+            s == 1 ||
+            s == 4 ||
+            s == 5 ||
+            s == 8 ||
+            s == 9 ||
+            s == 13
+        ) {
+            t[i++] = 1;
+        }
+
+        if (
+            s == 2 ||
+            s == 4 ||
+            s == 5 ||
+            s == 9 ||
+            s == 10 ||
+            s == 14
+        ) {
+            t[i++] = 2;
+        }
+
+        if (
+            s == 3 ||
+            s == 6 ||
+            s == 7 ||
+            s == 10 ||
+            s == 11 ||
+            s == 15
+        ) {
+            t[i++] = 3;
+        }
+
+        if (
+            s == 8 ||
+            s == 12 ||
+            s == 13 ||
+            s == 17 ||
+            s == 18 ||
+            s == 23
+        ) {
+            t[i++] = 4;
+        }
+
+        if (
+            s == 9 ||
+            s == 13 ||
+            s == 14 ||
+            s == 18 ||
+            s == 19 ||
+            s == 24
+        ) {
+            t[i++] = 5;
+        }
+
+        if (
+            s == 10 ||
+            s == 14 ||
+            s == 15 ||
+            s == 19 ||
+            s == 20 ||
+            s == 25
+        ) {
+            t[i++] = 6;
+        }
+        
+        if (
+            s == 10 ||
+            s == 15 ||
+            s == 16 ||
+            s == 20 ||
+            s == 21 ||
+            s == 26
+        ) {
+            t[i++] = 7;
+        }
+
+        if (
+            s == 17 ||
+            s == 22 ||
+            s == 23 ||
+            s == 28 ||
+            s == 29 ||
+            s == 34
+        ) {
+            t[i++] = 8;
+        }
+
+        if (
+            s == 18 ||
+            s == 23 ||
+            s == 24 ||
+            s == 29 ||
+            s == 30 ||
+            s == 35
+        ) {
+            t[i++] = 9;
+        }
+
+        if (
+            s == 19 ||
+            s == 24 ||
+            s == 25 ||
+            s == 30 ||
+            s == 31 ||
+            s == 36
+        ) {
+            t[i++] = 10;
+        }
+
+        if (
+            s == 20 ||
+            s == 25 ||
+            s == 26 ||
+            s == 31 ||
+            s == 32 ||
+            s == 37
+        ) {
+            t[i++] = 11;
+        }
+
+        if (
+            s == 21 ||
+            s == 26 ||
+            s == 27 ||
+            s == 32 ||
+            s == 33 ||
+            s == 38
+        ) {
+            t[i++] = 12;
+        }
+
+        if (
+            s == 29 ||
+            s == 34 ||
+            s == 35 ||
+            s == 39 ||
+            s == 40 ||
+            s == 44
+        ) {
+            t[i++] = 13;
+        }
+
+        if (
+            s == 30 ||
+            s == 35 ||
+            s == 36 ||
+            s == 40 ||
+            s == 41 ||
+            s == 45
+        ) {
+            t[i++] = 14;
+        }
+
+        if (
+            s == 31 ||
+            s == 36 ||
+            s == 37 ||
+            s == 41 ||
+            s == 42 ||
+            s == 46
+        ) {
+            t[i++] = 15;
+        }
+
+        if (
+            s == 32 ||
+            s == 37 ||
+            s == 38 ||
+            s == 42 ||
+            s == 43 ||
+            s == 47
+        ) {
+            t[i++] = 16;
+        }
+
+        if (
+            s == 40 ||
+            s == 44 ||
+            s == 45 ||
+            s == 48 ||
+            s == 49 ||
+            s == 52
+        ) {
+            t[i++] = 17;
+        }
+
+        if (
+            s == 41 ||
+            s == 45 ||
+            s == 46 ||
+            s == 49 ||
+            s == 50 ||
+            s == 53
+        ) {
+            t[i++] = 18;
+        }
+
+        if (
+            s == 42 ||
+            s == 46 ||
+            s == 47 ||
+            s == 50 ||
+            s == 51 ||
+            s == 54
+        ) {
+            t[i++] = 19;
+        }
+        return t;
+    }
+
     function getAdjacentSettlementsToSettlement(uint256 s) public pure returns(uint256[] memory) {
         uint256[] memory res = new uint256[](3);
         uint256 i;
@@ -271,7 +487,6 @@ contract CatanBoard {
         
         return r;
     }
-
     
     function getAdjacentRoadsToSettlement(uint256 n) public pure returns (uint256[] memory) {
         uint256[] memory r = new uint256[](3);

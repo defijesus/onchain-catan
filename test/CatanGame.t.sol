@@ -17,49 +17,51 @@ contract CatanTest is Test {
     function setUp() public {
         testNumber = 42;
         board = new CatanBoard();
+        vm.prevrandao(bytes32(uint256(1)));
         game = new CatanGame(p1,p2,p3,p4,board);
     }
 
     function test_Play() public {
-        vm.startPrank(p1);
+        game.currentPlayer();
+        vm.startPrank(p2);
         game.placeInitial(10, 9);
         game.nextPhase();
         vm.stopPrank();
 
-        vm.prank(p2);
+        vm.prank(p3);
         game.placeInitial(50, 70);
         skip(4 minutes);
         game.nextPhase();
 
-        vm.startPrank(p3);
+        vm.startPrank(p4);
         game.placeInitial(49, 68);
         game.nextPhase();
         vm.stopPrank();
 
-        vm.startPrank(p4);
+        vm.startPrank(p1);
         game.placeInitial(16, 18);
         game.nextPhase();
         game.placeInitial(35, 42);
         game.nextPhase();
         vm.stopPrank();
 
-        vm.startPrank(p3);
+        vm.startPrank(p4);
         game.placeInitial(36, 44);
         game.nextPhase();
         vm.stopPrank();
 
-        vm.startPrank(p2);
+        vm.startPrank(p3);
         game.placeInitial(37, 46);
         game.nextPhase();
         vm.stopPrank();
 
-        vm.startPrank(p1);
+        vm.startPrank(p2);
         game.placeInitial(38, 48);
         game.nextPhase();
         vm.stopPrank();
 
         game.currentPhase();
-        vm.startPrank(p1);
+        vm.startPrank(p2);
         game.rollDice();
         game.nextPhase();
         vm.stopPrank();
@@ -67,20 +69,24 @@ contract CatanTest is Test {
         vm.prevrandao(bytes32(uint256(42)));
 
         game.currentPhase();
-        vm.startPrank(p2);
+        vm.startPrank(p3);
         game.rollDice();
         game.nextPhase();
         vm.stopPrank();
 
         
-        assertEq(game.playerResourceToAmount(1,2), 2);
+        assertEq(game.playerResourceToAmount(2,2), 2);
     }
 
-    function test_RoadAdjacency() public {
+    function test_PrintInitialBoardState() public {
         uint256[] memory res = new uint256[](3);
         res[0] = 23;
         res[1] = 32;
         res[2] = 39;
         assertEq(res, board.getAdjacentRoadsToRoad(33));
+        for (uint256 i = 1; i < 20; i++) {
+            console.log("tile", i, game.tileToResource(i));
+        }
+        
     }
 }
