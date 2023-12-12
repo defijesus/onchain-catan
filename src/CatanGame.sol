@@ -340,7 +340,7 @@ contract CatanGame {
             uint256 tries;
             bool robbed;
             uint256 resourceRobbed;
-            uint256 resource = (block.prevrandao % 4);
+            uint256 resource = block.prevrandao % 4;
             while (tries < 5 || !robbed) {
                 if (playerResourceToAmount[playerToBeRobbed][resource] != 0) {
                     playerResourceToAmount[playerToBeRobbed][resource]--;
@@ -365,6 +365,8 @@ contract CatanGame {
                     tile = 2;
                 } else if (tile == 54) {
                     tile = 53;
+                } else {
+                    tile++;
                 }
             }
         }
@@ -399,7 +401,7 @@ contract CatanGame {
         uint256 tries;
         bool robbed;
         uint256 resourceRobbed;
-        uint256 resource = (block.prevrandao % 4);
+        uint256 resource = block.prevrandao % 4;
         while (tries < 5 || !robbed) {
             if (playerResourceToAmount[playerToBeRobbed][resource] != 0) {
                 playerResourceToAmount[playerToBeRobbed][resource]--;
@@ -710,7 +712,7 @@ contract CatanGame {
             uint256 playerId = players[i];
             uint256 amountToBeDiscarded = playerDiscardAmount[playerId];
             require(playerDiscardAmount[playerId] > 0);
-            uint256 currentResource = (block.prevrandao % 4);
+            uint256 currentResource = block.prevrandao % 4;
             uint256[] memory discarded;
             
             // loop each resource starting at a random resource and discard a random amount until enough are discarted
@@ -753,7 +755,7 @@ contract CatanGame {
         uint8[19] memory tileOrder = [1,2,3,7,12,16,19,18,17,13,8,4,5,6,11,15,14,9,10];
         uint8[18] memory diceRollOrder = [5,2,6,3,8,10,9,12,11,4,8,10,9,4,5,6,3,11];
         // TODO use offset to shift the edge tile where numbers start to get placed for increased randomness
-        // uint8 offset = (block.prevrandao % 50) + 1;
+        // uint8 offset = (block.prevrandao % 6) + 1;
 
         uint256[19] memory resourcesForTiles = [
             WOOD,
@@ -779,7 +781,7 @@ contract CatanGame {
         
         // shuffle resource list
         for (uint256 i = 0; i < 19; i++) {
-            uint256 j = uint256(keccak256(abi.encode(block.prevrandao+1, i))) % 19;
+            uint256 j = uint256(keccak256(abi.encode(block.prevrandao, i))) % 19;
             uint256 tmp = resourcesForTiles[i];
             resourcesForTiles[i] = resourcesForTiles[j];
             resourcesForTiles[j] = tmp;
