@@ -56,6 +56,13 @@ Immediately I saw that with some magic numbers I could derive most of the center
 
 I kept my research drafts on ./boardResearch to share more insight on how I derived the magic values.
 
+Here is a layout of the board with all the (1) road, (2) settlement, & (3) tile IDs:
+
+![board](https://github.com/defijesus/onchain-catan/assets/7946015/671e7e55-5b4a-45c7-8f33-18220b03201b)
+
+Roads numbered from 1 to 72.
+Settlements numbered from 1 to 54.
+Tiles numbered from 1 to 19.
 
 ## game events & design considerations
 
@@ -66,7 +73,7 @@ There are many places where players could grief
 - Not ending turn. To prevent this we allow any player to end another players turn after a set time has passed.
 - Not discarding cards. To prevent this we allow any player to randomly discard another players cards after a set time has passed.
 
-This allows the game to continue even if a player is AFK, while still giving each player more than enough time to play before their turn forcibily ends.
+This implementation allows the game to continue even if a player is AFK, while still giving each player more than enough time to play before their turn forcibily ends.
 
 
 ### Randomness
@@ -140,77 +147,12 @@ Automation events:
 
 ## Current implementation problems
 
-- gas griefing: 
-    **Description:** Player never ends his own turn, other players end up spending more gas. **Fix:** Use gelato/MEV and a shared player balance to pay all gas fees, effectively socializing the gameplay gas fees between players involved. Increases reliance on 3rd party & increases effective gas costs.
+- gas griefing. 
+
+  **Description:** Player never ends his own turn, other players end up spending more gas. **Fix:** Use gelato/MEV and a shared player balance to pay all gas fees, effectively socializing the gameplay gas fees between players involved. Increases reliance on 3rd party & increases effective gas costs.
 
 ## Future development
 - all of the tests are needed (had no time to write proper tests unfortunately)
 - add all code related to signature validation
 - Matchmaking & ELO (TODO)
 - Betting games (TODO)
-- Multicall: perform multiple actions in a single transaction
-
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
