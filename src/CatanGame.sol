@@ -7,6 +7,7 @@ enum CurrentPhase {
     INITIAL_SETTLEMENT,
     KNIGHT_OR_ROLL,
     DISCARD,
+    PLACE_ROBBER,
     BUILD,
     GAME_ENDED
 }
@@ -15,9 +16,25 @@ error InvalidSettlementPlacement();
 error NotYourTurn();
 error CantAdvanceToNextTurn();
 
+/// Storage is a mess, a lot of low hanging fruit to pack up (eheh)
+///     could be waaaaaay more optimal
+/// Code itself is ok, not the best, but also features
+///     some low hanging fruit to pick up (unchecked blocks, etc...)
+/// It's now almost 6 am and I've been grinding for 17+ hours non-stop
+/// GameBoard logic took waaaaaaaay more time & effort than expected
 contract CatanGame {
+
+    // demoted from enum to facilitate nested mappings
+    uint256 public constant WOOD = 0;
+    uint256 public constant GRAIN = 1;
+    uint256 public constant SHEEP = 2;
+    uint256 public constant ORE = 3;
+    uint256 public constant BRICK = 4;
+    uint256 public constant DESERT = 5;
+
     CatanBoard public immutable BOARD; 
     
+    /// provably fairness info
     address public constant DEV_PROVIDER = 0xDe30040413b26d7Aa2B6Fc4761D80eb35Dcf97aD;
     bytes32 public devSeedHash;
     string public devSeed;
@@ -39,15 +56,6 @@ contract CatanGame {
     uint256 public longestRoadOwner;
     mapping(uint256 => bool) private roadsSeen;
 
-    // demoted from enum to facilitate nested mappings
-    uint256 public constant WOOD = 0;
-    uint256 public constant GRAIN = 1;
-    uint256 public constant SHEEP = 2;
-    uint256 public constant ORE = 3;
-    uint256 public constant BRICK = 4;
-    uint256 public constant DESERT = 5;
-
-
     // player info
     mapping(uint256 playerId => 
         mapping(uint256 resource => uint256 amount)) public playerResourceToAmount;
@@ -56,22 +64,32 @@ contract CatanGame {
     mapping(address owner => uint256 playerId) public addressToPlayerId;
     mapping(uint256 playerId => uint256 amount) public playerDevCount;
     mapping(uint256 playerId => uint256 knightCount) public playerKnightsPlayed;
+    mapping(uint256 playerId => uint256 roadCount) public playerRoadCount;
+    mapping(uint256 playerId => uint256 settlementCount) public playerSettlementCount;
+    mapping(uint256 playerId => uint256 cityCount) public playerCityCount;
     
 
     // turn info
     bool public devPlayedThisTurn;
+    bool public robberPlaced;
     uint8 public currentSettlementPhaseTurns;
     CurrentPhase public currentPhase;
     uint256 public currentSettlementEndTime;
     uint256 public currentDiceRollEndTime;
     uint256 public currentTurnEndTime;
     uint256 public currentDiscardEndTime;
+    uint256 public currentRobberEndTime;
     uint256 public currentPlayer;
     uint256 public currentTurn;
 
+    // road events
     event RoadPlaced(uint256 player, uint256 road);
     event LongestRoad(uint256 player, uint256 roadSize);
+
+    // settlement events
     event SettlementPlaced(uint256 player, uint256 settlement);
+    event CityPlaced(uint256 player, uint256 settlement);
+
     event DevCardBought(uint256 player, uint256 devId);
     event KnightPlayed(uint256 player, uint256 tilePlaced, uint256 robbedPlayer, uint256 robbedResource, uint256 devId);
     event YearOfThePlentyPlayed(uint256 player, uint256 resource1, uint256 resource2, uint256 devId);
@@ -80,6 +98,8 @@ contract CatanGame {
     event DiceRoll(uint256 roll);
     event NewPhase(CurrentPhase phase, uint256 currentPlayer);
     event Winner(uint256 indexed player);
+    event ResourceCollected(uint256 player, uint256 resource, uint256 amount);
+    event ResourceDiscarted(uint256 player, uint256 woodAmount, uint256 grainAmount, uint256 sheepAmount, uint256 oreAmount, uint256 brickAmount);
 
     modifier onlyOnBuildPhase() {
         require(currentPhase == CurrentPhase.BUILD);
@@ -212,6 +232,11 @@ contract CatanGame {
                 playerDiscardAmount[3] == 0 &&
                 playerDiscardAmount[4] == 0
             );
+            startRobber();
+        }
+        if (currentPhase == CurrentPhase.PLACE_ROBBER) {
+            require(robberPlaced);
+            robberPlaced = false;
             startBuild();
         }
 
@@ -265,9 +290,11 @@ contract CatanGame {
                         if (isCity[currSettlement]) {
                             playerResourceToAmount[player][resourceOnTile] += 2;
                             playerTotalResourceAmount[player] += 2;
+                            emit ResourceCollected(player, resourceOnTile, 2);
                         } else {
                             playerResourceToAmount[player][resourceOnTile]++;
                             playerTotalResourceAmount[player]++;
+                            emit ResourceCollected(player, resourceOnTile, 1);
                         }
                     }
                 }
@@ -285,11 +312,64 @@ contract CatanGame {
             if (tagged) {
                 startDiscard();
             } else {
-                startBuild();
+                startRobber();
             }
         }
 
         emit DiceRoll(currDiceRoll);
+    }
+
+    function placeRobber(uint256 tile, uint256 playerToBeRobbed) public {
+        require(currentPhase == CurrentPhase.PLACE_ROBBER);
+        if (block.timestamp < currentRobberEndTime) {
+            uint256 playerId = addressToPlayerId[msg.sender];
+            require(
+                currentPlayer == playerId &&
+                tile != robberTile
+            );
+            uint256[] memory settlementsAdjacent = BOARD.getAdjacentSettlementsToTile(tile);
+            bool isRobbedPlayerNearby;
+            for (uint256 i = 0; i < settlementsAdjacent.length; i++) {
+                if (settlementOwner[settlementsAdjacent[i]] == playerToBeRobbed) {
+                    isRobbedPlayerNearby = true;
+                }
+            }
+            require(isRobbedPlayerNearby);
+
+            //steal random card
+            uint256 tries;
+            bool robbed;
+            uint256 resourceRobbed;
+            uint256 resource = (block.prevrandao % 4);
+            while (tries < 5 || !robbed) {
+                if (playerResourceToAmount[playerToBeRobbed][resource] != 0) {
+                    playerResourceToAmount[playerToBeRobbed][resource]--;
+                    playerResourceToAmount[playerId][resource]++;
+                    robbed = true;
+                    resourceRobbed = resource;
+                }
+                tries++;
+                if (resource > 3) {
+                    resource = 0;
+                } else {
+                    ++resource;
+                }
+            }
+        } else {
+            // TODO improve this logic
+            // if player that rolls 7 does not move robber in time
+            // this will only move robber to new tile, without stealing any cards
+            tile = (block.prevrandao % 54) + 1;
+            if (tile == robberTile) {
+                if (tile == 1) {
+                    tile = 2;
+                } else if (tile == 54) {
+                    tile = 53;
+                }
+            }
+        }
+        robberPlaced = true;
+        robberTile = tile;
     }
 
     
@@ -320,7 +400,7 @@ contract CatanGame {
         bool robbed;
         uint256 resourceRobbed;
         uint256 resource = (block.prevrandao % 4);
-        while (tries > 5 || !robbed) {
+        while (tries < 5 || !robbed) {
             if (playerResourceToAmount[playerToBeRobbed][resource] != 0) {
                 playerResourceToAmount[playerToBeRobbed][resource]--;
                 playerResourceToAmount[playerId][resource]++;
@@ -371,7 +451,8 @@ contract CatanGame {
         require(
             currentPlayer == playerId &&
             devPlayedThisTurn == false && 
-            devIdToOwner[devId] == playerId
+            devIdToOwner[devId] == playerId &&
+            playerRoadCount[playerId] < 14
         );
 
         uint256[] memory adjacent;
@@ -424,6 +505,8 @@ contract CatanGame {
         devPlayedThisTurn = true;
         playerDevCount[playerId]--;
         devIdToOwner[devId] = 0;
+        playerRoadCount[playerId] += 2;
+
         increaseTurnTime(30 seconds);
 
         emit RoadBuildingPlayed(playerId, newRoad1, newRoad2);
@@ -465,14 +548,21 @@ contract CatanGame {
         uint256 devId = currentDevId++;
         playerDevCount[playerId]++;
         devIdToOwner[devId] = playerId;
+        playerResourceToAmount[playerId][SHEEP]--;
+        playerResourceToAmount[playerId][ORE]--;
+        playerResourceToAmount[playerId][GRAIN]--;
 
         emit DevCardBought(playerId, devId);
     }
 
     function buyRoad(uint256 newRoad, uint256 fromId, bool fromRoad) public onlyOnBuildPhase {
-        require(newRoad > 0 && newRoad < 73);
         uint256 playerId = addressToPlayerId[msg.sender];
-        require(currentPlayer == playerId);
+        require(
+            currentPlayer == playerId &&
+            newRoad > 0 && 
+            newRoad < 73 &&
+            playerRoadCount[playerId] < 15
+        );
         uint256[] memory adjacent;
         bool isAdjacent;
         if (fromRoad) {
@@ -494,9 +584,12 @@ contract CatanGame {
         }
         
         require(isAdjacent);
+
         roadOwner[newRoad] = playerId;
         playerResourceToAmount[playerId][WOOD]--;
         playerResourceToAmount[playerId][BRICK]--;
+        playerRoadCount[playerId]++;
+
         increaseTurnTime(30 seconds);
 
         emit RoadPlaced(playerId, newRoad);
@@ -504,7 +597,13 @@ contract CatanGame {
 
     function buySettlement(uint256 newSettlement, uint256 fromRoad) public onlyOnBuildPhase {
         uint256 playerId = addressToPlayerId[msg.sender];
-        require(currentPlayer == playerId && roadOwner[fromRoad] == playerId);
+        require(
+            newSettlement > 0 &&
+            newSettlement < 55 &&
+            currentPlayer == playerId && 
+            roadOwner[fromRoad] == playerId &&
+            playerSettlementCount[playerId] < 5
+        );
         uint256[] memory roadsAdjacent = BOARD.getAdjacentRoadsToSettlement(newSettlement);
         bool isAdjacent;
         for (uint256 i = 0; i < roadsAdjacent.length; i++) {
@@ -514,13 +613,32 @@ contract CatanGame {
             }
         }
         require(isAdjacent);
+
         playerResourceToAmount[playerId][WOOD]--;
         playerResourceToAmount[playerId][BRICK]--;
         playerResourceToAmount[playerId][SHEEP]--;
         playerResourceToAmount[playerId][GRAIN]--;
+        playerSettlementCount[playerId]++;
+
         increaseTurnTime(30 seconds);
 
         emit SettlementPlaced(playerId, newSettlement);
+    }
+
+    function buyCity(uint256 settlement) public onlyOnBuildPhase {
+        uint256 playerId = addressToPlayerId[msg.sender];
+        require(
+            settlementOwner[settlement] == playerId &&
+            playerCityCount[playerId] < 4 &&
+            currentPlayer == playerId
+        );
+
+        playerResourceToAmount[playerId][ORE] -= 3;
+        playerResourceToAmount[playerId][GRAIN] -= 2;
+        playerCityCount[playerId]++;
+        isCity[settlement] = true;
+
+        emit CityPlaced(playerId, settlement);
     }
 
     /// trade functions
@@ -582,6 +700,8 @@ contract CatanGame {
         playerResourceToAmount[playerId][BRICK] -= brickAmount;
         playerTotalResourceAmount[playerId] -= sum;
         playerDiscardAmount[playerId] = 0;
+        
+        emit ResourceDiscarted(playerId, woodAmount, grainAmount, sheepAmount, oreAmount, brickAmount);
     }
 
     function discardForPlayers(uint256[] calldata players) public {
@@ -591,6 +711,7 @@ contract CatanGame {
             uint256 amountToBeDiscarded = playerDiscardAmount[playerId];
             require(playerDiscardAmount[playerId] > 0);
             uint256 currentResource = (block.prevrandao % 4);
+            uint256[] memory discarded;
             
             // loop each resource starting at a random resource and discard a random amount until enough are discarted
             while (amountToBeDiscarded > 0) {
@@ -602,9 +723,11 @@ contract CatanGame {
                 if (currResourceAmount < amountToDiscard) {
                     playerResourceToAmount[playerId][currentResource] = 0;
                     amountToBeDiscarded -= currResourceAmount;
+                    discarded[currentResource] += currResourceAmount;
                 } else {
                     playerResourceToAmount[playerId][currentResource] = currResourceAmount - amountToDiscard;
                     amountToBeDiscarded -= amountToDiscard;
+                    discarded[currentResource] += amountToDiscard;
                 }
                 currentResource++;
                 if (currentResource > 5) {
@@ -614,6 +737,8 @@ contract CatanGame {
 
             playerTotalResourceAmount[playerId] -= amountToBeDiscarded;
             playerDiscardAmount[playerId] = 0;
+
+            emit ResourceDiscarted(playerId, discarded[0], discarded[1], discarded[2], discarded[3], discarded[4]);
         }
     }
 
@@ -722,6 +847,10 @@ contract CatanGame {
         currentDiscardEndTime = block.timestamp + 1 minutes;
     }
 
+    function startRobber() internal {
+        currentPhase = CurrentPhase.PLACE_ROBBER;
+        currentRobberEndTime = block.timestamp + 1 minutes;
+    }
 
     /// Priviledge functions
 

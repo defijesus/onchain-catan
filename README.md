@@ -4,10 +4,17 @@ Fun and well known game that presents some interesting design problems when buil
 
 ## Features
 
-- Fully implemented onchain game logic
-- Trade cards with bank
+- Randomized resource tiles
+- Randomized starting player
+- Initial road & settlement placements
+- Buy Roads, Settlements, Cities & Dev cards
+- Discard when 7 is rolled
+- Force random discard when players are AFK
+- Force roll dice and end turn when current player is AFK
+- Trade cards with bank & ports
 - Trade cards between players (TODO sig validation, & server side code)
-- Private, provably-fair, development cards (TODO sig validation & server side code)
+- Play private, provably-fair, development cards (TODO sig validation & server side code)
+- Win with Biggest Army, Victory Point Cards, & Longest Road
 
 ## game board & design considerations
 
@@ -141,7 +148,7 @@ Automation events:
 - add all code related to signature validation
 - Matchmaking & ELO (TODO)
 - Betting games (TODO)
-
+- Multicall: perform multiple actions in a single transaction
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 
