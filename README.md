@@ -8,10 +8,11 @@ Fun and well known game that presents some interesting design problems when buil
 - Randomized starting player
 - Initial road & settlement placements
 - Buy Roads, Settlements, Cities & Dev cards
-- Discard when 7 is rolled
+- Discard & place robber when 7 is rolled
+- Randomly place robber if player is AFK
 - Force random discard when players are AFK
 - Force roll dice and end turn when current player is AFK
-- Trade cards with bank & ports
+- Trade cards using the bank & ports
 - Trade cards between players (TODO sig validation, & server side code)
 - Play private, provably-fair, development cards (TODO sig validation & server side code)
 - Win with Biggest Army, Victory Point Cards, & Longest Road
