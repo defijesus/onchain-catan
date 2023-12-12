@@ -150,7 +150,7 @@ Automation events:
 
 - gas griefing. 
 
-  **Description:** Player never ends his own turn, other players end up spending more gas. **Fix:** Use gelato/MEV and a shared player balance to pay all gas fees, effectively socializing the gameplay gas fees between players involved. Increases reliance on 3rd party & increases effective gas costs.
+  **Description:** Player never ends his own turn, other players end up spending more gas; **Severity** Low; **Fix:** Use gelato/MEV and a shared player balance to pay all gas fees, effectively socializing the gameplay gas fees between players involved. Increases reliance on 3rd party & increases effective gas costs;
 
 ## Future development
 - all of the tests are needed (had no time to write proper tests unfortunately)
