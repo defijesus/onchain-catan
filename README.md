@@ -1,4 +1,4 @@
-# onchain catan
+# onchain catan speedran in 18 hours
 
 Fun and well known game that presents some interesting design problems when built in a decentralized fashion. Player cooperation, randomness, automation, MEV & private state. 
 
